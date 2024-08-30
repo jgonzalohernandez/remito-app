@@ -5,6 +5,13 @@ from reportlab.lib.units import mm
 from reportlab.lib import utils
 import pandas as pd
 import os
+from datetime import datetime
+import pytz
+
+# Función para obtener la fecha actual en Argentina (sin la hora)
+def obtener_fecha_argentina():
+    zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
+    return datetime.now(zona_horaria).strftime('%Y-%m-%d')
 
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
@@ -115,11 +122,12 @@ def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, de
 
 # Función para guardar los datos en un archivo CSV
 def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos, csv_path='remitos.csv'):
-    # Obtener la ruta absoluta al archivo CSV basado en el directorio actual del script
-    csv_path = os.path.join(os.getcwd(), csv_path)
-    
+    # Obtener la fecha actual en Argentina
+    fecha = obtener_fecha_argentina()
+
     # Crear un DataFrame con la información del remito
     df = pd.DataFrame({
+        'Fecha': [fecha],
         'Número de Remito': [remito_numero],
         'Cliente': [cliente],
         'Domicilio': [domicilio],
@@ -221,4 +229,5 @@ if st.button("Generar Remito"):
 if st.button("Descargar CSV de Remitos"):
     with open('remitos.csv', 'rb') as f:
         st.download_button(label="Descargar CSV", data=f, file_name='remitos.csv', mime='text/csv')
+
 
