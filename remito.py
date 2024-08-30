@@ -6,7 +6,11 @@ from reportlab.lib import utils
 import pandas as pd
 import os
 from datetime import datetime
+import locale
 import pytz
+
+# Configurar localización en español
+locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
 
 # Función para obtener la fecha actual en Argentina (sin la hora)
 def obtener_fecha_argentina():
@@ -247,6 +251,8 @@ if st.button("Descargar CSV de Remitos"):
             st.download_button(label="Descargar CSV", data=f, file_name=csv_path, mime='text/csv')
     else:
         st.warning("No hay remitos para descargar para el mes actual.")
+
+
 
 
 
