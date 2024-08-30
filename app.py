@@ -171,7 +171,7 @@ if 'numero_remito' not in st.session_state:
     st.session_state['numero_remito'] = leer_numero_remito()
 
 # Logo del talonario (ruta de la imagen JPG)
-logo_image_path = "C://Users//ghernandez//Desktop//logomot//LOGO//logo motoya curvas-1.jpg"
+logo_image_path = "logo motoya curvas-1.jpg"
 
 # Botón para generar el PDF del remito
 if st.button("Generar Remito"):
