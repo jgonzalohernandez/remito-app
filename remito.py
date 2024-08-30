@@ -1,4 +1,3 @@
-
 import streamlit as st
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -115,7 +114,10 @@ def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, de
     return pdf_path
 
 # Función para guardar los datos en un archivo CSV
-def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos, csv_path='C:/Users/ghernandez/Desktop/remitos.csv'):
+def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos, csv_path='remitos.csv'):
+    # Obtener la ruta absoluta al archivo CSV basado en el directorio actual del script
+    csv_path = os.path.join(os.getcwd(), csv_path)
+    
     # Crear un DataFrame con la información del remito
     df = pd.DataFrame({
         'Número de Remito': [remito_numero],
@@ -217,5 +219,6 @@ if st.button("Generar Remito"):
 
 # Botón para descargar el archivo CSV
 if st.button("Descargar CSV de Remitos"):
-    with open('C:/Users/ghernandez/Desktop/remitos.csv', 'rb') as f:
+    with open('remitos.csv', 'rb') as f:
         st.download_button(label="Descargar CSV", data=f, file_name='remitos.csv', mime='text/csv')
+
