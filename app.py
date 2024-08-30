@@ -109,7 +109,7 @@ def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, de
     texto_y_position = firma_y_position - 15*mm
     c.setFont("Helvetica", 8)
     c.drawString(20*mm, texto_y_position, "La mercadería viaja por cuenta y riesgo del cliente. Los días de lluvia y los horarios nocturnos sufren un incremento del 50%.")
-    c.drawString(20*mm, texto_y_position - 5*mm, "Cada trámite incluye una demora de hasta 20 minutos, transcurrido ese lapso se cobrará la demora. (Regla general del Servicio)")
+    c.drawString(20*mm, texto_y_position - 5*mm, "Cada trámite incluye una tolerancia de espera de hasta 10 minutos, transcurrido ese lapso se cobrará la demora. (Regla general del Servicio)")
 
     c.save()
     return pdf_path
