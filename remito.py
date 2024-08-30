@@ -8,11 +8,6 @@ import os
 from datetime import datetime
 import pytz
 
-# Función para obtener la fecha actual en Argentina (sin la hora)
-def obtener_fecha_argentina():
-    zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
-    return datetime.now(zona_horaria).strftime('%Y-%m-%d')
-
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
     img = utils.ImageReader(path)
@@ -34,7 +29,7 @@ def guardar_numero_remito(numero, file_path='numero_remito.txt'):
         file.write(str(numero))
 
 # Función para generar el remito en PDF
-def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_path, lluvia, cantidad_bultos):
+def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_path, lluvia, cantidad_bultos):
     pdf_path = f'remito_{remito_numero}.pdf'
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
@@ -59,6 +54,10 @@ def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, de
     # Número de Servicio alineado a la derecha
     c.setFont("Helvetica", 10)
     c.drawRightString(195*mm, 255*mm, f"N° de Servicio: {remito_numero}")
+
+    # Fecha del remito alineada a la derecha
+    c.setFont("Helvetica", 10)
+    c.drawRightString(195*mm, 250*mm, f"Fecha: {fecha}")
 
     # Ajuste del margen de la caja para los datos del cliente (con más espacio interno)
     margin_top = 240*mm  # Ajuste de la posición de la caja para que no se solape con los datos de la empresa
@@ -121,9 +120,11 @@ def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, de
     return pdf_path
 
 # Función para guardar los datos en un archivo CSV
-def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos, csv_path='remitos.csv'):
-    # Obtener la fecha actual en Argentina
-    fecha = obtener_fecha_argentina()
+def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos):
+    # Obtener el nombre del archivo CSV basado en el mes y año
+    fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
+    mes_anio = fecha_obj.strftime('%Y-%m')
+    csv_path = f'remitos_{mes_anio}.csv'
 
     # Crear un DataFrame con la información del remito
     df = pd.DataFrame({
@@ -152,6 +153,9 @@ def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto,
 
 # Interfaz de Streamlit
 st.title("Generador de Remitos Digitales")
+
+# Campo para la fecha
+fecha = st.date_input("Fecha del Remito", value=datetime.now())
 
 # Campos del formulario
 cliente = st.text_input("Nombre del Cliente")
@@ -212,12 +216,13 @@ logo_image_path = "logo motoya curvas-1.jpg"
 # Botón para generar el PDF del remito
 if st.button("Generar Remito"):
     if cliente and domicilio and sector and solicitante and moto and not detalle_df.empty:
-        pdf_path = generar_pdf(st.session_state['numero_remito'], cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, cantidad_bultos)
+        fecha_str = fecha.strftime('%Y-%m-%d')
+        pdf_path = generar_pdf(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, cantidad_bultos)
         st.success(f"Remito generado con éxito: {pdf_path}")
         st.download_button(label="Descargar Remito", data=open(pdf_path, "rb"), file_name=pdf_path, mime="application/pdf")
         
         # Guardar el remito en el archivo CSV
-        guardar_en_csv(st.session_state['numero_remito'], cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos)
+        guardar_en_csv(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos)
         
         # Incrementar y guardar el nuevo número de remito
         st.session_state['numero_remito'] += 1
@@ -227,7 +232,9 @@ if st.button("Generar Remito"):
 
 # Botón para descargar el archivo CSV
 if st.button("Descargar CSV de Remitos"):
-    with open('remitos.csv', 'rb') as f:
-        st.download_button(label="Descargar CSV", data=f, file_name='remitos.csv', mime='text/csv')
+    mes_anio = fecha.strftime('%Y-%m')
+    csv_path = f'remitos_{mes_anio}.csv'
+    with open(csv_path, 'rb') as f:
+        st.download_button(label="Descargar CSV", data=f, file_name=csv_path, mime='text/csv')
 
 
