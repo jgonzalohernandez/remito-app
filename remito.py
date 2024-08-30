@@ -26,7 +26,7 @@ def leer_numero_remito(file_path='numero_remito.txt'):
         with open(file_path, 'r') as file:
             return int(file.read().strip())
     else:
-        return 5800  # Número inicial si el archivo no existe
+        return 5900  # Número inicial si el archivo no existe
 
 # Función para guardar el número de remito en un archivo
 def guardar_numero_remito(numero, file_path='numero_remito.txt'):
