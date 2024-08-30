@@ -1,4 +1,3 @@
-
 import streamlit as st
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -6,6 +5,13 @@ from reportlab.lib.units import mm
 from reportlab.lib import utils
 import pandas as pd
 import os
+from datetime import datetime
+import pytz
+
+# Función para obtener la fecha actual en Argentina (sin la hora)
+def obtener_fecha_argentina():
+    zona_horaria = pytz.timezone('America/Argentina/Buenos_Aires')
+    return datetime.now(zona_horaria).strftime('%Y-%m-%d')
 
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
@@ -20,7 +26,7 @@ def leer_numero_remito(file_path='numero_remito.txt'):
         with open(file_path, 'r') as file:
             return int(file.read().strip())
     else:
-        return 5800  # Número inicial si el archivo no existe
+        return 5900  # Número inicial si el archivo no existe
 
 # Función para guardar el número de remito en un archivo
 def guardar_numero_remito(numero, file_path='numero_remito.txt'):
@@ -115,9 +121,13 @@ def generar_pdf(remito_numero, cliente, domicilio, sector, solicitante, moto, de
     return pdf_path
 
 # Función para guardar los datos en un archivo CSV
-def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos, csv_path='C:/Users/ghernandez/Desktop/remitos.csv'):
+def guardar_en_csv(remito_numero, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos, csv_path='remitos.csv'):
+    # Obtener la fecha actual en Argentina
+    fecha = obtener_fecha_argentina()
+
     # Crear un DataFrame con la información del remito
     df = pd.DataFrame({
+        'Fecha': [fecha],
         'Número de Remito': [remito_numero],
         'Cliente': [cliente],
         'Domicilio': [domicilio],
@@ -197,7 +207,7 @@ if 'numero_remito' not in st.session_state:
     st.session_state['numero_remito'] = leer_numero_remito()
 
 # Logo del talonario (ruta de la imagen JPG)
-logo_image_path = "C://Users//ghernandez//Desktop//logomot//LOGO//logo motoya curvas-1.jpg"
+logo_image_path = "logo motoya curvas-1.jpg"
 
 # Botón para generar el PDF del remito
 if st.button("Generar Remito"):
@@ -217,5 +227,5 @@ if st.button("Generar Remito"):
 
 # Botón para descargar el archivo CSV
 if st.button("Descargar CSV de Remitos"):
-    with open('C:/Users/ghernandez/Desktop/remitos.csv', 'rb') as f:
+    with open('remitos.csv', 'rb') as f:
         st.download_button(label="Descargar CSV", data=f, file_name='remitos.csv', mime='text/csv')
