@@ -13,7 +13,7 @@ def conectar_db():
     try:
         conn_str = (
             'DRIVER={ODBC Driver 17 for SQL Server};'
-            'SERVER=DESKTOP-GO4SP4V;'
+            'SERVER=192.168.1;'
             'DATABASE=motoya;'
             'Trusted_Connection=yes;'
         )
