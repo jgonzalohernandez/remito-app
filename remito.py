@@ -8,23 +8,27 @@ import os
 from datetime import datetime
 import pyodbc
 
-# Configuración de la conexión a la base de datos SQL Server
+# Función para conectar a la base de datos
 def conectar_db():
-    conn_str = (
-        r'DRIVER={SQL Server};'
-        r'SERVER=localhost;'
-        r'DATABASE=MOTOYA;'
-        r'Trusted_Connection=yes;'
-    )
-    return pyodbc.connect(conn_str)
+    try:
+        conn_str = (
+            'DRIVER={ODBC Driver 17 for SQL Server};'
+            'SERVER=DESKTOP-GO4SP4V;'
+            'DATABASE=motoya;'
+            'Trusted_Connection=yes;'
+        )
+        conn = pyodbc.connect(conn_str)
+        return conn
+    except pyodbc.Error as e:
+        st.error(f"Error al conectar con la base de datos: {e}")
+        return None
 
-# Función para cargar la lista de remitos guardados desde la base de datos
-def cargar_remitos_guardados():
-    conn = conectar_db()
-    query = "SELECT NumeroRemito, PDFPath FROM Remitos"
-    df = pd.read_sql(query, conn)
-    conn.close()
-    return df
+# Función para cargar la lista de remitos guardados
+def cargar_remitos_guardados(carpeta_remitos='remitos'):
+    if not os.path.exists(carpeta_remitos):
+        os.makedirs(carpeta_remitos)
+    remitos = [f for f in os.listdir(carpeta_remitos) if f.endswith('.pdf')]
+    return remitos
 
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
@@ -36,20 +40,25 @@ def cargar_logo(path, width):
 # Función para leer el número de remito desde la base de datos
 def leer_numero_remito():
     conn = conectar_db()
-    query = "SELECT MAX(NumeroRemito) FROM Remitos"
-    result = pd.read_sql(query, conn)
+    if conn is None:
+        return 5900  # Valor por defecto en caso de error
+    cursor = conn.cursor()
+    cursor.execute("SELECT MAX(numero_remito) FROM remitos")
+    result = cursor.fetchone()
     conn.close()
-    if result.iloc[0, 0] is not None:
-        return result.iloc[0, 0] + 1
+    if result and result[0]:
+        return result[0] + 1
     else:
-        return 5940  # Número inicial si no hay registros
+        return 5900  # Valor inicial si no hay registros
 
 # Función para guardar el número de remito en la base de datos
-def guardar_numero_remito(remito_numero, pdf_path):
+def guardar_numero_remito(numero):
     conn = conectar_db()
+    if conn is None:
+        st.error("No se pudo conectar con la base de datos para guardar el número de remito.")
+        return
     cursor = conn.cursor()
-    query = "INSERT INTO Remitos (NumeroRemito, Fecha, Cliente, Domicilio, Sector, Solicitante, Moto, TotalImporte, Lluvia, Exclusividad, CantidadBultos, PDFPath) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
-    cursor.execute(query, remito_numero)
+    cursor.execute("INSERT INTO remitos (numero_remito) VALUES (?)", numero)
     conn.commit()
     conn.close()
 
@@ -194,15 +203,6 @@ def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante
     else:
         df.to_csv(csv_path, mode='w', header=True, index=False, sep=';', encoding='utf-8-sig')
 
-    # Guardar los detalles del remito en la base de datos
-    conn = conectar_db()
-    cursor = conn.cursor()
-    for i, row in detalle_df.iterrows():
-        query = "INSERT INTO DetalleRemitos (NumeroRemito, Direccion, Monto) VALUES (?, ?, ?)"
-        cursor.execute(query, remito_numero, row['Dirección'], row['Monto'])
-    conn.commit()
-    conn.close()
-
 # Interfaz de Streamlit
 st.title("Generador de Remitos Digitales")
 
@@ -261,7 +261,7 @@ if bultos:
     cantidad_bultos = st.number_input("Cantidad de bultos", min_value=1, value=1)
     total_importe += 2500 * cantidad_bultos  # Valor del bulto actualizado a $2500
 
-# Leer el número de remito desde el archivo
+# Leer el número de remito desde la base de datos o archivo
 if 'numero_remito' not in st.session_state:
     st.session_state['numero_remito'] = leer_numero_remito()
 
@@ -279,12 +279,9 @@ if st.button("Generar Remito"):
         # Guardar el remito en el archivo CSV
         guardar_en_csv(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, exclusividad, cantidad_bultos)
         
-        # Guardar el remito en la base de datos
-        guardar_numero_remito(st.session_state['numero_remito'], pdf_path)
-        
         # Incrementar y guardar el nuevo número de remito
         st.session_state['numero_remito'] += 1
-        guardar_numero_remito(st.session_state['numero_remito'], pdf_path)
+        guardar_numero_remito(st.session_state['numero_remito'])
     else:
         st.error("Por favor, completa todos los campos antes de generar el remito.")
 
@@ -298,7 +295,7 @@ if st.button("Descargar CSV de Remitos"):
 # Sección para descargar remitos generados
 st.header("Descargar Remitos Generados")
 remitos_guardados = cargar_remitos_guardados()
-remito_seleccionado = st.selectbox("Selecciona un remito para descargar", remitos_guardados['PDFPath'])
+remito_seleccionado = st.selectbox("Selecciona un remito para descargar", remitos_guardados)
 
 if st.button("Descargar Remito Seleccionado"):
     with open(os.path.join('remitos', remito_seleccionado), 'rb') as f:
