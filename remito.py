@@ -12,7 +12,7 @@ import pyodbc
 def conectar_db():
     conn_str = (
         r'DRIVER={SQL Server};'
-        r'SERVER=DESKTOP-GO4SP4V\jgonz;'
+        r'SERVER=localhost;'
         r'DATABASE=MOTOYA;'
         r'Trusted_Connection=yes;'
     )
