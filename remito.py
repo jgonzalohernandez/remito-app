@@ -142,7 +142,38 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     c.save()
     return pdf_path
 
-# El resto de las funciones permanece igual, asegúrate de que todo el código esté actualizado
+# Función para guardar el remito en un archivo CSV
+def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, exclusividad, cantidad_bultos):
+    # Obtener el nombre del archivo CSV basado en el mes y año
+    fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
+    mes_anio = fecha_obj.strftime('%Y-%m')
+    csv_path = f'remitos_{mes_anio}.csv'
+
+    # Crear un DataFrame con la información del remito
+    df = pd.DataFrame({
+        'Fecha': [fecha],
+        'Número de Remito': [remito_numero],
+        'Cliente': [cliente],
+        'Domicilio': [domicilio],
+        'Sector': [sector],
+        'Solicitante': [solicitante],
+        'Moto': [moto],
+        'Total Importe': [total_importe],
+        'Lluvia': ['Sí' if lluvia else 'No'],
+        'Exclusividad': ['Sí' if exclusividad else 'No'],
+        'Cantidad de Bultos': [cantidad_bultos],
+    })
+    
+    # Agregar los detalles del remito al DataFrame
+    for i, row in detalle_df.iterrows():
+        df[f'Dirección {i+1}'] = [row['Dirección']]
+        df[f'Monto {i+1}'] = [row['Monto']]
+    
+    # Verificar si el archivo ya existe
+    if os.path.exists(csv_path):
+        df.to_csv(csv_path, mode='a', header=False, index=False, sep=';', encoding='utf-8-sig')
+    else:
+        df.to_csv(csv_path, mode='w', header=True, index=False, sep=';', encoding='utf-8-sig')
 
 # Interfaz de Streamlit
 st.title("Generador de Remitos Digitales")
