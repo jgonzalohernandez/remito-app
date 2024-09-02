@@ -29,7 +29,7 @@ def guardar_numero_remito(numero, file_path='numero_remito.txt'):
         file.write(str(numero))
 
 # Función para generar el remito en PDF
-def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_path, lluvia, cantidad_bultos):
+def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_path, lluvia, exclusividad, cantidad_bultos):
     pdf_path = f'remito_{remito_numero}.pdf'
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
@@ -87,7 +87,14 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
         detalle_y_position -= 10*mm
 
-    # Ajustar el importe si se seleccionó la opción de lluvia
+    # Ajustar el importe si se seleccionó la opción de lluvia o exclusividad
+    if exclusividad:
+        c.drawString(20*mm, detalle_y_position, "Exclusividad (50% incremento):")
+        c.drawRightString(195*mm, detalle_y_position, f"${total_importe * 0.50:.2f}")
+        c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
+        total_importe *= 1.50  # Incremento del 50%
+        detalle_y_position -= 10*mm
+
     if lluvia:
         c.drawString(20*mm, detalle_y_position, "Lluvia (50% incremento):")
         c.drawRightString(195*mm, detalle_y_position, f"${total_importe * 0.50:.2f}")
@@ -120,7 +127,7 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     return pdf_path
 
 # Función para guardar los datos en un archivo CSV
-def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos):
+def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, exclusividad, cantidad_bultos):
     # Obtener el nombre del archivo CSV basado en el mes y año
     fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
     mes_anio = fecha_obj.strftime('%Y-%m')
@@ -137,6 +144,7 @@ def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante
         'Moto': [moto],
         'Total Importe': [total_importe],
         'Lluvia': ['Sí' if lluvia else 'No'],
+        'Exclusividad': ['Sí' if exclusividad else 'No'],
         'Cantidad de Bultos': [cantidad_bultos],
     })
     
@@ -199,6 +207,9 @@ total_importe = detalle_df["Monto"].sum()
 # Checkbox para seleccionar si llueve
 lluvia = st.checkbox("¿Está lloviendo? (Incrementa un 50% la importación)")
 
+# Checkbox para seleccionar si es exclusividad
+exclusividad = st.checkbox("¿Es un viaje exclusivo? (Incrementa un 50% la importación)")
+
 # Seleccionar si hay bultos y la cantidad de bultos
 bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2000)")
 cantidad_bultos = 0
@@ -217,12 +228,12 @@ logo_image_path = "logo motoya curvas-1.jpg"
 if st.button("Generar Remito"):
     if cliente and domicilio and sector and solicitante and moto and not detalle_df.empty:
         fecha_str = fecha.strftime('%Y-%m-%d')
-        pdf_path = generar_pdf(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, cantidad_bultos)
+        pdf_path = generar_pdf(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, exclusividad, cantidad_bultos)
         st.success(f"Remito generado con éxito: {pdf_path}")
         st.download_button(label="Descargar Remito", data=open(pdf_path, "rb"), file_name=pdf_path, mime="application/pdf")
         
         # Guardar el remito en el archivo CSV
-        guardar_en_csv(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos)
+        guardar_en_csv(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, exclusividad, cantidad_bultos)
         
         # Incrementar y guardar el nuevo número de remito
         st.session_state['numero_remito'] += 1
