@@ -82,12 +82,12 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     # Agregar el detalle de los bultos si corresponde
     if cantidad_bultos > 0:
         c.drawString(20*mm, detalle_y_position, f"Bulto(s) ({cantidad_bultos}):")
-        c.drawRightString(195*mm, detalle_y_position, f"${2000 * cantidad_bultos:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${2500 * cantidad_bultos:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
         detalle_y_position -= 10*mm
 
     # Calcular los incrementos por exclusividad y lluvia sobre el total
-    total_direcciones_monto = detalle_df["Monto"].sum() + (2000 * cantidad_bultos)
+    total_direcciones_monto = detalle_df["Monto"].sum() + (2500 * cantidad_bultos)
     if exclusividad:
         exclusividad_monto = total_direcciones_monto * 0.50
         c.drawString(20*mm, detalle_y_position, "Exclusividad (50% incremento):")
@@ -213,11 +213,11 @@ lluvia = st.checkbox("¿Está lloviendo? (Incrementa un 50% la importación)")
 exclusividad = st.checkbox("¿Es un viaje exclusivo? (Incrementa un 50% la importación)")
 
 # Seleccionar si hay bultos y la cantidad de bultos
-bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2000)")
+bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2500)")
 cantidad_bultos = 0
 if bultos:
     cantidad_bultos = st.number_input("Cantidad de bultos", min_value=1, value=1)
-    total_importe += 2000 * cantidad_bultos  # Sumar el costo de los bultos al total
+    total_importe += 2500 * cantidad_bultos  # Sumar el costo de los bultos al total
 
 # Leer el número de remito desde el archivo
 if 'numero_remito' not in st.session_state:
