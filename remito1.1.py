@@ -6,7 +6,6 @@ from reportlab.lib import utils
 import pandas as pd
 import os
 from datetime import datetime
-import pytz
 
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
@@ -29,7 +28,7 @@ def guardar_numero_remito(numero, file_path='numero_remito.txt'):
         file.write(str(numero))
 
 # Función para generar el remito en PDF
-def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_path, lluvia, cantidad_bultos):
+def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_path, lluvia, exclusividad, cantidad_bultos):
     pdf_path = f'remito_{remito_numero}.pdf'
     c = canvas.Canvas(pdf_path, pagesize=A4)
 
@@ -83,17 +82,27 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     # Agregar el detalle de los bultos si corresponde
     if cantidad_bultos > 0:
         c.drawString(20*mm, detalle_y_position, f"Bulto(s) ({cantidad_bultos}):")
-        c.drawRightString(195*mm, detalle_y_position, f"${2000 * cantidad_bultos:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${2500 * cantidad_bultos:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
         detalle_y_position -= 10*mm
 
-    # Ajustar el importe si se seleccionó la opción de lluvia
-    if lluvia:
-        c.drawString(20*mm, detalle_y_position, "Lluvia (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${total_importe * 0.50:.2f}")
+    # Calcular los incrementos por exclusividad y lluvia sobre el total
+    total_direcciones_monto = detalle_df["Monto"].sum() + (2500 * cantidad_bultos)
+    if exclusividad:
+        exclusividad_monto = total_direcciones_monto * 0.50
+        c.drawString(20*mm, detalle_y_position, "Exclusividad (50% incremento):")
+        c.drawRightString(195*mm, detalle_y_position, f"${exclusividad_monto:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe *= 1.50  # Incremento del 50%
         detalle_y_position -= 10*mm
+        total_importe += exclusividad_monto
+
+    if lluvia:
+        lluvia_monto = total_direcciones_monto * 0.50
+        c.drawString(20*mm, detalle_y_position, "Lluvia (50% incremento):")
+        c.drawRightString(195*mm, detalle_y_position, f"${lluvia_monto:.2f}")
+        c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
+        detalle_y_position -= 10*mm
+        total_importe += lluvia_monto
 
     c.setDash(1, 0)
 
@@ -120,7 +129,7 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     return pdf_path
 
 # Función para guardar los datos en un archivo CSV
-def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos):
+def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, exclusividad, cantidad_bultos):
     # Obtener el nombre del archivo CSV basado en el mes y año
     fecha_obj = datetime.strptime(fecha, '%Y-%m-%d')
     mes_anio = fecha_obj.strftime('%Y-%m')
@@ -137,6 +146,7 @@ def guardar_en_csv(remito_numero, fecha, cliente, domicilio, sector, solicitante
         'Moto': [moto],
         'Total Importe': [total_importe],
         'Lluvia': ['Sí' if lluvia else 'No'],
+        'Exclusividad': ['Sí' if exclusividad else 'No'],
         'Cantidad de Bultos': [cantidad_bultos],
     })
     
@@ -199,12 +209,15 @@ total_importe = detalle_df["Monto"].sum()
 # Checkbox para seleccionar si llueve
 lluvia = st.checkbox("¿Está lloviendo? (Incrementa un 50% la importación)")
 
+# Checkbox para seleccionar si es un viaje exclusivo
+exclusividad = st.checkbox("¿Es un viaje exclusivo? (Incrementa un 50% la importación)")
+
 # Seleccionar si hay bultos y la cantidad de bultos
-bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2000)")
+bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2500)")
 cantidad_bultos = 0
 if bultos:
     cantidad_bultos = st.number_input("Cantidad de bultos", min_value=1, value=1)
-    total_importe += 2000 * cantidad_bultos  # Sumar el costo de los bultos al total
+    total_importe += 2500 * cantidad_bultos  # Sumar el costo de los bultos al total
 
 # Leer el número de remito desde el archivo
 if 'numero_remito' not in st.session_state:
@@ -217,12 +230,12 @@ logo_image_path = "logo motoya curvas-1.jpg"
 if st.button("Generar Remito"):
     if cliente and domicilio and sector and solicitante and moto and not detalle_df.empty:
         fecha_str = fecha.strftime('%Y-%m-%d')
-        pdf_path = generar_pdf(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, cantidad_bultos)
+        pdf_path = generar_pdf(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, exclusividad, cantidad_bultos)
         st.success(f"Remito generado con éxito: {pdf_path}")
         st.download_button(label="Descargar Remito", data=open(pdf_path, "rb"), file_name=pdf_path, mime="application/pdf")
         
         # Guardar el remito en el archivo CSV
-        guardar_en_csv(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, cantidad_bultos)
+        guardar_en_csv(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, lluvia, exclusividad, cantidad_bultos)
         
         # Incrementar y guardar el nuevo número de remito
         st.session_state['numero_remito'] += 1
