@@ -73,36 +73,56 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     # Detalle del servicio con líneas punteadas (sin cajas)
     c.setDash(1, 2)
     detalle_y_position = 160*mm
+    total_exclusividad = 0
+    total_lluvia = 0
+
     for index, row in detalle_df.iterrows():
         c.drawString(20*mm, detalle_y_position, f"{row['Dirección']}")
         c.drawRightString(195*mm, detalle_y_position, f"${row['Monto']:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
+
+        if exclusividad:
+            exclusividad_monto = row['Monto'] * 0.50
+            total_exclusividad += exclusividad_monto
+
+        if lluvia:
+            lluvia_monto = row['Monto'] * 0.50
+            total_lluvia += lluvia_monto
+
         detalle_y_position -= 10*mm
 
     # Agregar el detalle de los bultos si corresponde
     if cantidad_bultos > 0:
+        bultos_total = 2000 * cantidad_bultos
         c.drawString(20*mm, detalle_y_position, f"Bulto(s) ({cantidad_bultos}):")
-        c.drawRightString(195*mm, detalle_y_position, f"${2000 * cantidad_bultos:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${bultos_total:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
+
+        if exclusividad:
+            exclusividad_monto = bultos_total * 0.50
+            total_exclusividad += exclusividad_monto
+
+        if lluvia:
+            lluvia_monto = bultos_total * 0.50
+            total_lluvia += lluvia_monto
+
         detalle_y_position -= 10*mm
 
-    # Ajustar el importe si se seleccionó la opción de exclusividad
+    # Añadir incrementos por exclusividad y lluvia
     if exclusividad:
-        exclusividad_monto = (total_importe + 2000 * cantidad_bultos) * 0.50
         c.drawString(20*mm, detalle_y_position, "Exclusividad (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${exclusividad_monto:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${total_exclusividad:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe += exclusividad_monto
         detalle_y_position -= 10*mm
 
-    # Ajustar el importe si se seleccionó la opción de lluvia
     if lluvia:
-        lluvia_monto = (total_importe + 2000 * cantidad_bultos) * 0.50
         c.drawString(20*mm, detalle_y_position, "Lluvia (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${lluvia_monto:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${total_lluvia:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe += lluvia_monto
         detalle_y_position -= 10*mm
+
+    # Recalcular el total con los incrementos
+    total_importe += total_exclusividad + total_lluvia
 
     c.setDash(1, 0)
 
@@ -210,7 +230,7 @@ total_importe = detalle_df["Monto"].sum()
 lluvia = st.checkbox("¿Está lloviendo? (Incrementa un 50% la importación)")
 
 # Checkbox para seleccionar si hay exclusividad
-exclusividad = st.checkbox("¿Exclusividad? (Incrementa un 50% la importación)")
+exclusividad = st.checkbox("¿Es un servicio exclusivo? (Incrementa un 50% la importación)")
 
 # Seleccionar si hay bultos y la cantidad de bultos
 bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2000)")
@@ -228,7 +248,7 @@ logo_image_path = "logo motoya curvas-1.jpg"
 
 # Botón para generar el PDF del remito
 if st.button("Generar Remito"):
-    if cliente and domicilio and sector and solicitante and moto and not detalle_df.empty:
+    if cliente and domicilio and sector y solicitante and moto and not detalle_df.empty:
         fecha_str = fecha.strftime('%Y-%m-%d')
         pdf_path = generar_pdf(st.session_state['numero_remito'], fecha_str, cliente, domicilio, sector, solicitante, moto, detalle_df, total_importe, logo_image_path, lluvia, exclusividad, cantidad_bultos)
         st.success(f"Remito generado con éxito: {pdf_path}")
@@ -249,4 +269,5 @@ if st.button("Descargar CSV de Remitos"):
     csv_path = f'remitos_{mes_anio}.csv'
     with open(csv_path, 'rb') as f:
         st.download_button(label="Descargar CSV", data=f, file_name=csv_path, mime='text/csv')
+
 
