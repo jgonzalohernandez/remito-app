@@ -7,10 +7,6 @@ import pandas as pd
 import os
 from datetime import datetime
 
-# Crear carpeta para almacenar los remitos si no existe
-if not os.path.exists('remitos'):
-    os.makedirs('remitos')
-
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
     img = utils.ImageReader(path)
@@ -247,12 +243,18 @@ if st.button("Generar Remito"):
     else:
         st.error("Por favor, completa todos los campos antes de generar el remito.")
 
-# Listar y descargar remitos generados
+# Botón para descargar el archivo CSV
+if st.button("Descargar CSV de Remitos"):
+    mes_anio = fecha.strftime('%Y-%m')
+    csv_path = f'remitos_{mes_anio}.csv'
+    with open(csv_path, 'rb') as f:
+        st.download_button(label="Descargar CSV", data=f, file_name=csv_path, mime='text/csv')
+
+# Lista de remitos generados para descargar
 st.subheader("Descargar Remitos Generados")
-remitos_disponibles = os.listdir('remitos')
+remitos_disponibles = [f for f in os.listdir('remitos') if f.endswith('.pdf')]
 remito_seleccionado = st.selectbox("Selecciona un remito para descargar", remitos_disponibles)
 
 if st.button("Descargar Remito Seleccionado"):
-    if remito_seleccionado:
-        with open(f'remitos/{remito_seleccionado}', 'rb') as file:
-            st.download_button(label="Descargar", data=file, file_name=remito_seleccionado, mime='application/pdf')
+    with open(os.path.join('remitos', remito_seleccionado), 'rb') as f:
+        st.download_button(label="Descargar Remito", data=f, file_name=remito_seleccionado, mime='application/pdf')
