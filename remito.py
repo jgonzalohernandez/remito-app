@@ -6,7 +6,6 @@ from reportlab.lib import utils
 import pandas as pd
 import os
 from datetime import datetime
-import pytz
 
 # Función para cargar la imagen del logo desde un archivo JPG
 def cargar_logo(path, width):
@@ -74,13 +73,11 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     # Detalle del servicio con líneas punteadas (sin cajas)
     c.setDash(1, 2)
     detalle_y_position = 160*mm
-    total_direcciones = 0
     for index, row in detalle_df.iterrows():
         c.drawString(20*mm, detalle_y_position, f"{row['Dirección']}")
         c.drawRightString(195*mm, detalle_y_position, f"${row['Monto']:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
         detalle_y_position -= 10*mm
-        total_direcciones += row['Monto']
 
     # Agregar el detalle de los bultos si corresponde
     if cantidad_bultos > 0:
@@ -91,18 +88,20 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
 
     # Ajustar el importe si se seleccionó la opción de exclusividad
     if exclusividad:
+        exclusividad_monto = (total_importe + 2000 * cantidad_bultos) * 0.50
         c.drawString(20*mm, detalle_y_position, "Exclusividad (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${total_direcciones * 0.50:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${exclusividad_monto:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe += total_direcciones * 0.50
+        total_importe += exclusividad_monto
         detalle_y_position -= 10*mm
 
     # Ajustar el importe si se seleccionó la opción de lluvia
     if lluvia:
+        lluvia_monto = (total_importe + 2000 * cantidad_bultos) * 0.50
         c.drawString(20*mm, detalle_y_position, "Lluvia (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${total_direcciones * 0.50:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${lluvia_monto:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe += total_direcciones * 0.50
+        total_importe += lluvia_monto
         detalle_y_position -= 10*mm
 
     c.setDash(1, 0)
@@ -210,7 +209,7 @@ total_importe = detalle_df["Monto"].sum()
 # Checkbox para seleccionar si llueve
 lluvia = st.checkbox("¿Está lloviendo? (Incrementa un 50% la importación)")
 
-# Checkbox para seleccionar si es exclusividad
+# Checkbox para seleccionar si hay exclusividad
 exclusividad = st.checkbox("¿Exclusividad? (Incrementa un 50% la importación)")
 
 # Seleccionar si hay bultos y la cantidad de bultos
