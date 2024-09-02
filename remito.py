@@ -74,11 +74,13 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
     # Detalle del servicio con líneas punteadas (sin cajas)
     c.setDash(1, 2)
     detalle_y_position = 160*mm
+    total_direcciones = 0
     for index, row in detalle_df.iterrows():
         c.drawString(20*mm, detalle_y_position, f"{row['Dirección']}")
         c.drawRightString(195*mm, detalle_y_position, f"${row['Monto']:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
         detalle_y_position -= 10*mm
+        total_direcciones += row['Monto']
 
     # Agregar el detalle de los bultos si corresponde
     if cantidad_bultos > 0:
@@ -87,19 +89,20 @@ def generar_pdf(remito_numero, fecha, cliente, domicilio, sector, solicitante, m
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
         detalle_y_position -= 10*mm
 
-    # Ajustar el importe si se seleccionó la opción de lluvia o exclusividad
+    # Ajustar el importe si se seleccionó la opción de exclusividad
     if exclusividad:
         c.drawString(20*mm, detalle_y_position, "Exclusividad (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${total_importe * 0.50:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${total_direcciones * 0.50:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe *= 1.50  # Incremento del 50%
+        total_importe += total_direcciones * 0.50
         detalle_y_position -= 10*mm
 
+    # Ajustar el importe si se seleccionó la opción de lluvia
     if lluvia:
         c.drawString(20*mm, detalle_y_position, "Lluvia (50% incremento):")
-        c.drawRightString(195*mm, detalle_y_position, f"${total_importe * 0.50:.2f}")
+        c.drawRightString(195*mm, detalle_y_position, f"${total_direcciones * 0.50:.2f}")
         c.line(15*mm, detalle_y_position - 2*mm, 195*mm, detalle_y_position - 2*mm)
-        total_importe *= 1.50  # Incremento del 50%
+        total_importe += total_direcciones * 0.50
         detalle_y_position -= 10*mm
 
     c.setDash(1, 0)
@@ -208,7 +211,7 @@ total_importe = detalle_df["Monto"].sum()
 lluvia = st.checkbox("¿Está lloviendo? (Incrementa un 50% la importación)")
 
 # Checkbox para seleccionar si es exclusividad
-exclusividad = st.checkbox("¿Es un viaje exclusivo? (Incrementa un 50% la importación)")
+exclusividad = st.checkbox("¿Exclusividad? (Incrementa un 50% la importación)")
 
 # Seleccionar si hay bultos y la cantidad de bultos
 bultos = st.checkbox("¿Hay bultos? (Costo por bulto: $2000)")
@@ -247,5 +250,4 @@ if st.button("Descargar CSV de Remitos"):
     csv_path = f'remitos_{mes_anio}.csv'
     with open(csv_path, 'rb') as f:
         st.download_button(label="Descargar CSV", data=f, file_name=csv_path, mime='text/csv')
-
 
