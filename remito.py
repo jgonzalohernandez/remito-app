@@ -269,5 +269,3 @@ if st.button("Descargar CSV de Remitos"):
     csv_path = f'remitos_{mes_anio}.csv'
     with open(csv_path, 'rb') as f:
         st.download_button(label="Descargar CSV", data=f, file_name=csv_path, mime='text/csv')
-
-
