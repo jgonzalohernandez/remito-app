@@ -13,7 +13,7 @@ def conectar_db():
     try:
         conn_str = (
             "DRIVER={ODBC Driver 17 for SQL Server};"
-            "SERVER=192.168.0.114,1433;"  # Utiliza el nombre del servidor y el puerto 1433
+            "SERVER=localhost;"  # Utiliza el nombre del servidor y el puerto 1433
             "DATABASE=Motoya;"              # Nombre de la base de datos
             "Trusted_Connection=yes;"       # Autenticación de Windows
             )
