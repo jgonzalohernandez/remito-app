@@ -18,7 +18,7 @@ def cargar_logo(path, width):
     return path, width, int(width * aspect)
 
 # Obtén el token desde la variable de entorno o reemplázalo por el token de GitHub aquí
-GITHUB_TOKEN = os.getenv('GITHUB_PAT')  # Asegúrate de que este valor esté configurado
+GITHUB_TOKEN = os.getenv('PAT_GITHUB')  # Asegúrate de que este valor esté configurado
 REPO_NAME = "jgonzalohernandez/ArchivosGenerados"  # Reemplaza con tu repositorio
 
 g = Github(GITHUB_TOKEN)
