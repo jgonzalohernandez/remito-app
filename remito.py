@@ -10,37 +10,38 @@ from github import Github
 import base64
 import io
 
+# Función para cargar el logo
+def cargar_logo(path, width):
+    img = utils.ImageReader(path)
+    iw, ih = img.getSize()
+    aspect = ih / float(iw)
+    return path, width, int(width * aspect)
+
 # Obtén el token desde la variable de entorno o reemplázalo por el token de GitHub aquí
 GITHUB_TOKEN = os.getenv('GITHUB_PAT')  # Asegúrate de que este valor esté configurado
 REPO_NAME = "jgonzalohernandez/ArchivosGenerados"  # Reemplaza con tu repositorio
 
-if not GITHUB_TOKEN:
-    st.error("Error: El token de GitHub no está configurado.")
-else:
-    g = Github(GITHUB_TOKEN)
-    repo = g.get_repo(REPO_NAME)
+g = Github(GITHUB_TOKEN)
+repo = g.get_repo(REPO_NAME)
 
 # Función para subir archivos a GitHub
 def subir_a_github(ruta_archivo, nombre_archivo):
-    try:
-        with open(ruta_archivo, 'rb') as file:
-            contenido = file.read()
-            contenido_base64 = base64.b64encode(contenido).decode('utf-8')
+    with open(ruta_archivo, 'rb') as file:
+        contenido = file.read()
+        contenido_base64 = base64.b64encode(contenido).decode('utf-8')
         
-        # Verifica si el archivo ya existe
-        try:
-            contenido_existente = repo.get_contents(f"archivos/{nombre_archivo}")
-            repo.update_file(contenido_existente.path, f"Actualiza {nombre_archivo}", contenido_base64, contenido_existente.sha)
-        except:
-            repo.create_file(f"archivos/{nombre_archivo}", f"Sube {nombre_archivo}", contenido_base64)
-    except Exception as e:
-        st.error(f"Error al subir archivo a GitHub: {e}")
+    # Verifica si el archivo ya existe
+    try:
+        contenido_existente = repo.get_contents(nombre_archivo)
+        repo.update_file(contenido_existente.path, f"Actualiza {nombre_archivo}", contenido_base64, contenido_existente.sha)
+    except:
+        repo.create_file(nombre_archivo, f"Sube {nombre_archivo}", contenido_base64)
 
 # Función para cargar la lista de remitos guardados en el repositorio de GitHub
 def cargar_remitos_guardados_github():
     remitos = []
     try:
-        contenidos = repo.get_contents("archivos/")
+        contenidos = repo.get_contents("")
         for contenido in contenidos:
             if contenido.path.endswith('.pdf'):
                 remitos.append(contenido.path)
